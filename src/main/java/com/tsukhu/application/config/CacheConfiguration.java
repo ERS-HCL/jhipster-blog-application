@@ -38,6 +38,18 @@ public class CacheConfiguration {
             cm.createCache(com.tsukhu.application.domain.User.class.getName(), jcacheConfiguration);
             cm.createCache(com.tsukhu.application.domain.Authority.class.getName(), jcacheConfiguration);
             cm.createCache(com.tsukhu.application.domain.User.class.getName() + ".authorities", jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Region.class.getName(), jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Country.class.getName(), jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Location.class.getName(), jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Department.class.getName(), jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Department.class.getName() + ".employees", jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Task.class.getName(), jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Task.class.getName() + ".jobs", jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Employee.class.getName(), jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Employee.class.getName() + ".jobs", jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Job.class.getName(), jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.Job.class.getName() + ".tasks", jcacheConfiguration);
+            cm.createCache(com.tsukhu.application.domain.JobHistory.class.getName(), jcacheConfiguration);
             // jhipster-needle-ehcache-add-entry
         };
     }
