@@ -3,9 +3,13 @@ package com.tsukhu.application.web.rest;
 import com.tsukhu.application.JhipsterBlogApp;
 
 import com.tsukhu.application.domain.Blog;
+import com.tsukhu.application.domain.User;
 import com.tsukhu.application.repository.BlogRepository;
+import com.tsukhu.application.repository.UserRepository;
+import com.tsukhu.application.security.jwt.TokenProvider;
 import com.tsukhu.application.web.rest.errors.ExceptionTranslator;
 
+import com.tsukhu.application.web.rest.vm.LoginVM;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,6 +19,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -26,7 +32,7 @@ import java.util.List;
 
 import static com.tsukhu.application.web.rest.TestUtil.createFormattingConversionService;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,6 +47,7 @@ public class BlogResourceIntTest {
 
     private static final String DEFAULT_NAME = "AAAAAAAAAA";
     private static final String UPDATED_NAME = "BBBBBBBBBB";
+    private static final String DEFAULT_USER = "test";
 
     private static final String DEFAULT_HANDLE = "AAAAAAAAAA";
     private static final String UPDATED_HANDLE = "BBBBBBBBBB";
@@ -48,6 +55,17 @@ public class BlogResourceIntTest {
     @Autowired
     private BlogRepository blogRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TokenProvider tokenProvider;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
@@ -69,7 +87,8 @@ public class BlogResourceIntTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
         final BlogResource blogResource = new BlogResource(blogRepository);
-        this.restBlogMockMvc = MockMvcBuilders.standaloneSetup(blogResource)
+        UserJWTController userJWTController = new UserJWTController(tokenProvider, authenticationManager);
+        this.restBlogMockMvc = MockMvcBuilders.standaloneSetup(blogResource,userJWTController)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
             .setConversionService(createFormattingConversionService())
@@ -171,6 +190,27 @@ public class BlogResourceIntTest {
     @Test
     @Transactional
     public void getAllBlogs() throws Exception {
+        User user = new User();
+        user.setLogin("user-jwt-controller");
+        user.setEmail("user-jwt-controller@example.com");
+        user.setActivated(true);
+        user.setPassword(passwordEncoder.encode(DEFAULT_USER));
+
+        userRepository.saveAndFlush(user);
+
+        LoginVM login = new LoginVM();
+        login.setUsername("user-jwt-controller");
+        login.setPassword("test");
+        restBlogMockMvc.perform(post("/api/authenticate")
+            .contentType(TestUtil.APPLICATION_JSON_UTF8)
+            .content(TestUtil.convertObjectToJsonBytes(login)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id_token").isString())
+            .andExpect(jsonPath("$.id_token").isNotEmpty())
+            .andExpect(header().string("Authorization", not(nullValue())))
+            .andExpect(header().string("Authorization", not(isEmptyString())));
+
+        blog.user(user);
         // Initialize the database
         blogRepository.saveAndFlush(blog);
 
@@ -182,7 +222,7 @@ public class BlogResourceIntTest {
             .andExpect(jsonPath("$.[*].name").value(hasItem(DEFAULT_NAME.toString())))
             .andExpect(jsonPath("$.[*].handle").value(hasItem(DEFAULT_HANDLE.toString())));
     }
-    
+
 
     @Test
     @Transactional
@@ -242,7 +282,7 @@ public class BlogResourceIntTest {
 
         // Create the Blog
 
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException 
+        // If the entity doesn't have an ID, it will throw BadRequestAlertException
         restBlogMockMvc.perform(put("/api/blogs")
             .contentType(TestUtil.APPLICATION_JSON_UTF8)
             .content(TestUtil.convertObjectToJsonBytes(blog)))
