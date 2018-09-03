@@ -3,11 +3,13 @@ package com.tsukhu.application.web.rest;
 import com.codahale.metrics.annotation.Timed;
 import com.tsukhu.application.domain.Blog;
 import com.tsukhu.application.repository.BlogRepository;
+import com.tsukhu.application.security.SecurityUtils;
 import com.tsukhu.application.web.rest.errors.BadRequestAlertException;
 import com.tsukhu.application.web.rest.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -86,7 +88,7 @@ public class BlogResource {
     @Timed
     public List<Blog> getAllBlogs() {
         log.debug("REST request to get all Blogs");
-        return blogRepository.findAll();
+        return blogRepository.findByUserIsCurrentUser();
     }
 
     /**
@@ -97,9 +99,13 @@ public class BlogResource {
      */
     @GetMapping("/blogs/{id}")
     @Timed
-    public ResponseEntity<Blog> getBlog(@PathVariable Long id) {
+    public ResponseEntity<?> getBlog(@PathVariable Long id) {
         log.debug("REST request to get Blog : {}", id);
         Optional<Blog> blog = blogRepository.findById(id);
+        if (blog.isPresent() && blog.get().getUser() != null &&
+            !blog.get().getUser().getLogin().equals(SecurityUtils.getCurrentUserLogin().orElse(""))) {
+            return new ResponseEntity<>("error.http.403", HttpStatus.FORBIDDEN);
+        }
         return ResponseUtil.wrapOrNotFound(blog);
     }
 

@@ -3,6 +3,7 @@ package com.tsukhu.application.web.rest;
 import com.codahale.metrics.annotation.Timed;
 import com.tsukhu.application.domain.Entry;
 import com.tsukhu.application.repository.EntryRepository;
+import com.tsukhu.application.security.SecurityUtils;
 import com.tsukhu.application.web.rest.errors.BadRequestAlertException;
 import com.tsukhu.application.web.rest.util.HeaderUtil;
 import com.tsukhu.application.web.rest.util.PaginationUtil;
@@ -95,9 +96,11 @@ public class EntryResource {
         log.debug("REST request to get a page of Entries");
         Page<Entry> page;
         if (eagerload) {
-            page = entryRepository.findAllWithEagerRelationships(pageable);
+            page = entryRepository.findByBlogUserLoginOrderByDateDescWithEagerRelationships(
+                SecurityUtils.getCurrentUserLogin().orElse(null),pageable);
         } else {
-            page = entryRepository.findAll(pageable);
+            page = entryRepository.findByBlogUserLoginOrderByDateDesc(
+                SecurityUtils.getCurrentUserLogin().orElse(null),pageable);
         }
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, String.format("/api/entries?eagerload=%b", eagerload));
         return new ResponseEntity<>(page.getContent(), headers, HttpStatus.OK);
