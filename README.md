@@ -3,7 +3,7 @@
 
 This application was generated using JHipster 5.2.1, you can find documentation and help at [https://www.jhipster.tech/documentation-archive/v5.2.1](https://www.jhipster.tech/documentation-archive/v5.2.1).
 
-This is the latest implementation of Mat Raibles tutorial , but using React instead of Angular, plus CI / CD enabled
+This is the latest implementation of Mat Raible's tutorial , but using React instead of Angular, plus CI / CD enabled
 
 ## Development
 
